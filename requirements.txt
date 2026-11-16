@@ -1,0 +1,15 @@
+# 基础依赖（start.bat 用清华 → aliyun → 官方镜像链安装）
+flask
+numpy
+scipy
+scikit-learn
+soundfile
+librosa
+joblib
+transformers
+huggingface_hub
+av        # PyAV：自带 ffmpeg 库，解码 m4a/aac/mp4 等格式
+
+# PyTorch（体积大、源不同，start.bat 单独安装，失败不阻断启动）：
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Python 3.9/3.10 均可，pip 会自动选择兼容版本（Py3.9 需 torch<2.7）。

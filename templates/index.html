@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VOICE GUARD · 语音真伪鉴别</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<!-- 海浪背景（两层错速漂移） -->
+<div class="waves" aria-hidden="true">
+  <svg class="wave wave-a" viewBox="0 0 2400 120" preserveAspectRatio="none">
+    <path d="M0,64 C150,110 300,10 450,64 C600,118 750,18 900,64 C1050,110 1200,20 1200,64
+             C1350,110 1500,10 1650,64 C1800,118 1950,18 2100,64 C2250,110 2400,20 2400,64
+             L2400,120 L0,120 Z"/>
+  </svg>
+  <svg class="wave wave-b" viewBox="0 0 2400 120" preserveAspectRatio="none">
+    <path d="M0,82 C200,40 400,112 600,82 C800,52 1000,112 1200,82
+             C1400,52 1600,112 1800,82 C2000,52 2200,112 2400,82
+             L2400,120 L0,120 Z"/>
+  </svg>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="kicker"><span class="dot"></span>VOICE GUARD</div>
+    <h1>VOICE GUARD</h1>
+    <svg class="brand-wave" viewBox="0 0 160 14" aria-hidden="true">
+      <path d="M0,7 C20,1 40,13 60,7 C80,1 100,13 120,7 C140,1 160,13 160,7"
+            fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <p class="sub">语音真伪鉴别 · 上传音频或在线录音，判断它是真人录音还是 AI 合成</p>
+  </header>
+
+  <div class="statusbar" id="statusbar">
+    <span class="status-item">
+      <span class="status-dot" id="deepDot"></span>深度模型：
+      <span id="deepStatus">检测中…</span>
+      <button class="mini-btn" id="deepBtn" hidden>下载</button>
+    </span>
+    <span class="dl-wrap" id="dlWrap" hidden><span class="dl-fill" id="dlFill"></span></span>
+    <span class="status-item">
+      <span class="status-dot" id="lightDot"></span>轻量模型：<span id="lightStatus">检测中…</span>
+    </span>
+  </div>
+
+  <main class="stack">
+    <section class="card">
+      <div class="drop" id="drop">
+        <div class="drop-icon">↑</div>
+        <div class="drop-title">拖入音频，或点击选择文件</div>
+        <div class="drop-hint">wav / mp3 / flac / ogg / m4a / aac · 0.5–60 秒 · 最大 20MB</div>
+      </div>
+      <input type="file" id="file" accept="audio/*,.m4a,.aac,.mp4" hidden>
+
+      <div class="demos" style="margin-top:18px">
+        <span class="demos-label">没有素材？用样例试一下</span>
+        <button class="chip" data-demo="real">真人</button>
+        <button class="chip" data-demo="ai">AI 合成</button>
+        <button class="chip" data-demo="vc">变声</button>
+      </div>
+
+      <div class="rec">
+        <div class="rec-head">
+          <span class="rec-title">在线录音鉴别</span>
+          <span class="rec-note">需允许麦克风权限 · 最长 60 秒</span>
+        </div>
+        <div class="rec-device" id="recDeviceWrap" hidden>
+          输入设备：
+          <select id="recDevice"></select>
+        </div>
+        <div class="rec-controls">
+          <button class="rec-btn" id="recBtn">● 开始录音</button>
+          <span class="rec-time" id="recTime">00:00</span>
+          <span class="level-track" id="levelTrack" hidden title="麦克风输入音量">
+            <span class="level-fill" id="levelFill"></span>
+          </span>
+          <span class="rec-live" id="recLive" hidden></span>
+        </div>
+        <div class="rec-done" id="recDone" hidden>
+          <audio id="recAudio" controls></audio>
+          <button class="chip" id="recUse">用这段音频鉴别</button>
+          <button class="chip" id="recRedo">重录</button>
+        </div>
+      </div>
+      <div class="meta" id="meta"></div>
+    </section>
+
+    <section class="card result">
+      <div class="empty" id="empty">等待音频…</div>
+      <div class="loading" id="loading" hidden>分析中…</div>
+
+      <div id="resultBox" hidden>
+        <div class="verdict">
+          <span class="badge" id="badge">真人</span>
+          <span class="conf">置信度 <b id="conf">0%</b></span>
+        </div>
+        <p class="mode-line" id="modeLine"></p>
+        <div class="warnings" id="warnings" hidden></div>
+        <div class="hints" id="hints" hidden></div>
+        <p class="advice" id="advice"></p>
+
+        <div class="bar-group" id="barGroupDeep">
+          <div class="group-label">深度模型 · wav2vec2 真伪二分类</div>
+          <div class="bars" id="barsDeep"></div>
+        </div>
+        <div class="bar-group">
+          <div class="group-label" id="lightGroupLabel">轻量模型 · SVM 三分类（离线兜底）</div>
+          <div class="bars" id="barsLight"></div>
+        </div>
+
+        <div class="viz">
+          <div class="legend">
+            <span><span class="lg-dot lg-score"></span>分段疑似合成度（轻量模型滑窗打分）</span>
+            <span><span class="lg-dot lg-chunk"></span>深度模型分块边界</span>
+          </div>
+          <canvas id="wave" height="64"></canvas>
+          <canvas id="mel" height="150"></canvas>
+          <div class="viz-caption"><span>波形 + 分段分析</span><span>log-mel 频谱</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <svg class="foot-wave" viewBox="0 0 160 14" aria-hidden="true">
+      <path d="M0,7 C20,1 40,13 60,7 C80,1 100,13 120,7 C140,1 160,13 160,7"
+            fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div>判定仅供参考，不构成法律或安全结论。深度模型：mo-thecreator/Deepfake-audio-detection
+    （wav2vec2-base，经国内镜像下载，约 360MB，CPU 推理）。深度模型未就绪时自动降级为轻量模型（精度有限）。
+    录音仅在浏览器本地完成，不上传至任何第三方。</div>
+    <button class="quit-btn" id="quitBtn" hidden>退出程序</button>
+  </footer>
+</div>
+
+<script src="/static/js/draw.js"></script>
+<script src="/static/js/recorder.js"></script>
+<script src="/static/js/main.js"></script>
+</body>
+</html>
